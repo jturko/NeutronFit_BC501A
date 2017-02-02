@@ -168,7 +168,7 @@ void Fitter::DrawToFile(std::string input)
 
 }
 
-vec Fitter::NelderMead(vec initial_vec, int itermax=50)
+vec Fitter::NelderMead(vec initial_vec, int itermax)
 {
     std::cout << "starting Nelder Mead method... " << std::endl;
     
