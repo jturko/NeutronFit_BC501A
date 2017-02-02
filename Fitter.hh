@@ -74,7 +74,9 @@ public:
     }    
     void SetSmearingCoeff(double A, double B, double C) {
         for(int i=0; i<GetNumberOfNeutronFit_BC501As(); i++) fNeutronFit_BC501AVector.at(i).SetSmearingCoeff(A,B,C);
-    }    
+    }
+    double GetOffset() { return fNeutronFit_BC501AVector.at(0).GetOffset(); }
+    double GetSmearingCoeff(int i) { return fNeutronFit_BC501AVector.at(0).GetSmearingCoeff(i); }
 
     void PrintParameters() { 
         std::cout << "     a1 = " << fParameters[0] << std::endl;
