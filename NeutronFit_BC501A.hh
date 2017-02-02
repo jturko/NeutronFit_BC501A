@@ -1,6 +1,6 @@
 
-#ifndef NEUTRONFIT_BC501A
-#define NEUTRONFIT_BC501A
+#ifndef NEUTRONFIT_BC501A_H
+#define NEUTRONFIT_BC501A_H
 #endif
 
 #include "TCanvas.h"
@@ -50,14 +50,21 @@ public:
     void Sort(double * par);
     void Sort(double a1=0.639, double a2=1.462, double a3=0.373, double a4=0.968, double carbon=0);
 
-    void SetSmearingCoeff(double A, double B, double C) {
+    void SetSmearingCoeff(double A=0.123, double B=0.125, double C=0.0074) {
         fSmearingCoeff[0] = A;
         fSmearingCoeff[1] = B;
         fSmearingCoeff[2] = C;
     }
+    double GetSmearingCoeff(int i) { 
+        if(i>=0 && i<=2) return fSmearingCoeff[i]; 
+        else { std::cout << "error in GetSmearingCoeff() !" << std::endl; return 0; }
+    }    
+
     void SetOffset(double offset) {
         fOffset = offset;
     }
+    double GetOffset() { return fOffset; }
+
     void SetParameters(double * par);
 
     double LightOutput(double E, double * par) {
@@ -103,6 +110,7 @@ public:
 
         fExpHist->Draw();
         fSimHist->Draw("same");   
+        fExpHist->Draw("same");   
     }
 
     double GetEnergy() { return fEnergy; }
