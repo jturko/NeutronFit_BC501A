@@ -317,6 +317,7 @@ vec Fitter::NelderMead(vec initial_vec, int itermax=50)
         std::cout << std::endl;
     }
      
+    Run(nmvec.at(0).at(0), nmvec.at(0).at(1), nmvec.at(0).at(2), nmvec.at(0).at(3), nmvec.at(0).at(4));
     return nmvec.at(0);
 
    //////////////////////////////////////////////////////////////////
