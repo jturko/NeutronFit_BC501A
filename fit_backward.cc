@@ -33,27 +33,19 @@ int main()
         60,70,80,90,100,110,120
     };   
 
-    std::ofstream outfile;
-    outfile.open("outfile.csv");   
+    Fitter fit;
 
-    //vec v(0.09375 , 0.0751694 , 0.013922 , 0.749069 , 3.2 , 0.170967 , 0.952316 , 0.0001);
-    //for(int i=62; i>=0; i--) {
-    vec v;
-    for(int i=62; i>=0; i--) {
-        Fitter fit(run_vector[i]);
-        //fit.SetSmearingCoeff(0.203312 , 0.148887 , 0.000109966);
-        fit.SetSmearingCoeff(0.13267 , 0.11154 , 0.00052);
-        vec v_new;
-        if(i==62) v_new = fit.NelderMead();
-        else      v_new = fit.NelderMead(v,50);
-        v = v_new;
-        outfile << run_vector[i] << " , ";
-        outfile << energy_vector[run_vector[i]] << " , "; 
-        for(int i=0; i<v.size(); i++) outfile << v.at(i) << " , ";
-        outfile << std::endl;
+    for(int i=0; i<=63; i++) 
+    {
+        if(angle_vector[i]>=90) fit.SetNextNeutronFit_BC501A(i);  // backward
+        //if(angle_vector[i]<=90 && angle_vector[i]>=60) fit.SetNextNeutronFit_BC501A(i);  // middle
+        //if(angle_vector[i]<=60) fit.SetNextNeutronFit_BC501A(i);  // foreward 
     }
-    
-    outfile.close();
+
+    fit.NelderMead();
+
+    fit.SortAllRuns();
+    fit.DrawToFile("backward.pdf");
 
     return 0;
 }
