@@ -42,8 +42,9 @@ int main()
         if(angle_vector[i]<=60) fit.SetNextNeutronFit_BC501A(i);  // foreward 
     }
 
-    fit.NelderMead();
+    //fit.NelderMead();
 
+    fit.SetParameters(0.653, 1.4428, 0.372, 0.9473, 0);
     fit.SortAllRuns();
     fit.DrawToFile("foreward.pdf");
 
