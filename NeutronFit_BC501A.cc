@@ -14,8 +14,8 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
     fEdepVector(NULL),
     fEkinVector(NULL),
     fPtypeVector(NULL),
-    fRebin(false),
-    fDrawStyle(false)
+    fFitFunc(NULL),
+    fRebin(false)
 {
     
     double energy_vector[] = 
@@ -133,6 +133,7 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
 
     fExpHist->Rebin(5);
     //if(fExpBinNum == 50100) fExpHist->Rebin(10);
+
 }
 
 NeutronFit_BC501A::~NeutronFit_BC501A() {}
@@ -170,7 +171,8 @@ void NeutronFit_BC501A::Sort(double * par)
     gErrorIgnoreLevel = kError;    
     
     SetParameters(par);
-
+    //PrintParameters();
+    
     fExpBinNum = fExpHist->GetNbinsX();
     if(fSimHist) { delete fSimHist; fSimHist = NULL; }
     fSimHist = new TH1F("fSimHist","fSimHist",fExpBinNum,-10,5000); 
@@ -244,6 +246,47 @@ void NeutronFit_BC501A::Sort(double * par)
 
     std::string title = std::to_string(fEnergy) + " MeV ; Chi2 = " + std::to_string(DoChi2());
     fExpHist->SetTitle(title.c_str());
+    
+    if(fFitFunc) { delete fFitFunc; fFitFunc = NULL; }
+    fFitFunc = new TF1("fFitFunc",this,&NeutronFit_BC501A::HistCompare,fCutoffLow,fCutoffHigh,5);
+    fFitFunc->SetNpx(100);
+    fFitFunc->SetParameters(fParameters[0],fParameters[1],fParameters[2],fParameters[3],fParameters[4]);
+    fFitFunc->SetParLimits(0,0.2,1);
+    fFitFunc->SetParLimits(1,0.5,10);
+    fFitFunc->SetParLimits(2,0.05,0.4);
+    fFitFunc->SetParLimits(3,0.8,1.2);
+    fFitFunc->SetParLimits(4,0,0.1);
 
 }
+
+double NeutronFit_BC501A::HistCompare(double * x, double * par) 
+{
+    if(!fSimHist) Sort();
+    if(DidParametersChange(par)) Sort(par);
+    double xx = x[0];
+    int bin = fSimHist->GetXaxis()->FindBin(xx);
+    double content = fSimHist->GetBinContent(bin);
+    return content;
+
+}
+
+TF1 * NeutronFit_BC501A::Fit()
+{
+    //ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2","Combination");
+    ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit","Simplex");
+    TVirtualFitter::SetPrecision(1.0e-10);
+    TVirtualFitter::SetMaxIterations(10000);
+    TFitResultPtr res = fExpHist->Fit("fFitFunc","RSV");
+    return fFitFunc;
+}
+
+bool NeutronFit_BC501A::DidParametersChange(double * par)
+{
+    for(int i=0; i<5; i++) 
+    {
+        if(TMath::Abs(par[i] - fParameters[i]) > 1e-4) return true;
+    }
+    return false;
+}
+
 

@@ -109,8 +109,9 @@ public:
         fExpHist->GetYaxis()->SetRangeUser(0.1,ymax);
 
         fExpHist->Draw();
-        fSimHist->Draw("same");   
-        fExpHist->Draw("same");   
+        fFitFunc->Draw("same");
+        //fSimHist->Draw("same");   
+        //fExpHist->Draw("same");   
     }
 
     double GetEnergy() { return fEnergy; }
@@ -125,6 +126,14 @@ public:
     TH1F * GetExpHist() { return fExpHist; }
     
     double GetSimEntries() { return fNumEntries; }
+
+    double HistCompare(double * x, double * par);
+    TF1 * Fit();
+    bool DidParametersChange(double * par);
+
+    TF1 * GetFitFunc() { return fFitFunc; }
+
+    TF1 * fFitFunc;
 
     double fEnergy;
     int fRunNum;
@@ -165,7 +174,6 @@ public:
     int fExpBinNum;
     
     bool fRebin;
-    bool fDrawStyle;
     
 
 };
