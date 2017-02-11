@@ -6,6 +6,9 @@
 #include "NeutronFit_BC501A.cc"
 #include "vec.hh"
 
+#include "Math/GSLMinimizer.h"
+#include "Math/Functor.h"
+
 class Fitter 
 {
 
@@ -50,7 +53,7 @@ public:
     }
     
     void SortAllRuns() { 
-        //PrintParameters();
+        PrintParameters();
         for(int num=0; num<GetNumberOfNeutronFit_BC501As(); num++) SortRun(num); 
         DoChi2();
     }
@@ -97,16 +100,7 @@ public:
     //void NelderMead3(double a1=0.639, double a2=1.462, double a3=0.373, double a4=0.968, double carbon=0, int itermax=50);    
     vec NelderMead(double a1=0.639, double a2=1.462, double a3=0.373, double a4=0.968, double carbon=0, int itermax=50);
     vec NelderMead(vec input, int itermax=50);
-
-    std::vector<NeutronFit_BC501A> fNeutronFit_BC501AVector;   
-    std::vector<int> fRunNumVector;
-
-    double fParameters[5];   
- 
-    TCanvas * fCanvas;
     
-    double fSum;
-    double fSum2;
     double DoChi2() { 
         fSum = 0.;
         fSum2 = 0.;
@@ -129,8 +123,35 @@ public:
         return DoChi2();
     }
     
+    double FitValue(const double * par) {
+        double mypar[5];
+        for(int i=0; i<5; i++) mypar[i]=par[i];
+        SetParameters(mypar);
+        //if(DidParametersChange(mypar)) SortAllRuns();
+        SortAllRuns();
+        return DoChi2();
+    }
+    bool DidParametersChange(double * par) {
+        for(int i=0; i<5; i++) {
+            if(TMath::Abs(fParameters[i] - par[i] > 0.00001)) return true;
+        }
+        return false;
+    }    
+    
 
     void DrawToFile(std::string name);
+
+    int Minimize();
+
+    std::vector<NeutronFit_BC501A> fNeutronFit_BC501AVector;   
+    std::vector<int> fRunNumVector;
+
+    double fParameters[5];   
+ 
+    TCanvas * fCanvas;
+    
+    double fSum;
+    double fSum2;
 
 
 };

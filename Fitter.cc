@@ -329,3 +329,36 @@ vec Fitter::NelderMead(double a1, double a2, double a3, double a4, double carbon
     return NelderMead(v,itermax);
 }
 
+int Fitter::Minimize()
+{
+    SortAllRuns();
+
+    //ROOT::Math::GSLMinimizer mini( ROOT::Math::kVectorBFGS );
+    ROOT::Math::GSLMinimizer mini( ROOT::Math::kConjugatePR );
+
+    mini.SetMaxFunctionCalls(1000);
+    mini.SetMaxIterations(100);
+    mini.SetTolerance(0.0001);
+    
+    //ROOT::Math::Functor f((&Func)(&nm_val),5);
+    ROOT::Math::Functor f(this,&Fitter::FitValue,5);
+    double step[5] = { 0.1,0.2,0.1,0.1 ,0.01 };
+    double variable[5] = { 0.639, 1.462, 0.373, 0.968, 0 };
+    
+    mini.SetFunction(f);
+    mini.SetVariable(0,"a1",variable[0],step[0]);
+    mini.SetVariable(1,"a2",variable[1],step[1]);
+    mini.SetVariable(2,"a3",variable[2],step[2]);
+    mini.SetVariable(3,"a4",variable[3],step[3]);
+    mini.SetVariable(4,"carbon",variable[4],step[4]);
+
+    mini.Minimize();
+
+    return 0;
+        
+}
+
+
+
+
+

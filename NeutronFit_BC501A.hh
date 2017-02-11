@@ -109,8 +109,8 @@ public:
         fExpHist->GetYaxis()->SetRangeUser(0.1,ymax);
 
         fExpHist->Draw();
-        fFitFunc->Draw("same");
-        //fSimHist->Draw("same");   
+        //fFitFunc->Draw("same");
+        fSimHist->Draw("same");   
         //fExpHist->Draw("same");   
     }
 
