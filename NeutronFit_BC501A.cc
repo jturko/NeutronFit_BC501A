@@ -127,7 +127,7 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
     if(fSimTree->GetEntries() > fExpHist->GetEntries()) fSimSortMax = fExpHist->GetEntries();
     else fSimSortMax = fSimTree->GetEntries();
     //fSimSortMax = fSimTree->GetEntries();
-    fSimSortMax = 1e5;
+    //fSimSortMax = 1e4;
 
     std::cout << "Run# = " << fRunNum << " ; Energy = " << fEnergy << " MeV ; cutoff(low,high) = (" << fCutoffLow << ","; 
     std::cout << fCutoffHigh << ") " << " ; #evts ratio = " << double(fSimSortMax)/double(fExpHist->GetEntries()) << std::endl;
