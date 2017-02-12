@@ -7,7 +7,12 @@
 #include "vec.hh"
 
 #include "Math/GSLMinimizer.h"
+#include "Math/GSLSimAnMinimizer.h"
 #include "Math/Functor.h"
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 class Fitter 
 {
@@ -53,7 +58,7 @@ public:
     }
     
     void SortAllRuns() { 
-        PrintParameters();
+        //PrintParameters();
         for(int num=0; num<GetNumberOfNeutronFit_BC501As(); num++) SortRun(num); 
         DoChi2();
     }
@@ -129,7 +134,10 @@ public:
         SetParameters(mypar);
         //if(DidParametersChange(mypar)) SortAllRuns();
         SortAllRuns();
-        return DoChi2();
+        
+        double val = DoChi2();
+
+        return val;
     }
     bool DidParametersChange(double * par) {
         for(int i=0; i<5; i++) {
@@ -137,11 +145,12 @@ public:
         }
         return false;
     }    
+    int MinimizeGSL(std::string name="kVectorBFGS");
+    int MinimizeSimAn();
     
 
     void DrawToFile(std::string name);
 
-    int Minimize();
 
     std::vector<NeutronFit_BC501A> fNeutronFit_BC501AVector;   
     std::vector<int> fRunNumVector;
@@ -150,6 +159,9 @@ public:
  
     TCanvas * fCanvas;
     
+    int fMinimizeCounter;
+    //ofstream fOutStream;    
+
     double fSum;
     double fSum2;
 

@@ -127,6 +127,7 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
     if(fSimTree->GetEntries() > fExpHist->GetEntries()) fSimSortMax = fExpHist->GetEntries();
     else fSimSortMax = fSimTree->GetEntries();
     //fSimSortMax = fSimTree->GetEntries();
+    fSimSortMax = 1e5;
 
     std::cout << "Run# = " << fRunNum << " ; Energy = " << fEnergy << " MeV ; cutoff(low,high) = (" << fCutoffLow << ","; 
     std::cout << fCutoffHigh << ") " << " ; #evts ratio = " << double(fSimSortMax)/double(fExpHist->GetEntries()) << std::endl;
@@ -186,7 +187,7 @@ void NeutronFit_BC501A::Sort(double * par)
     for(int i=0; i<fSimSortMax; i++)
     {
         counter++;
-        if( counter%50000==0 ) std::cout << "sorting " << fEnergy << " MeV... " << "evt " << counter << "/" << fSimSortMax << "; " << double(counter)/double(fSimSortMax)*100 << "% complete \r"  << std::flush; 
+        //if( counter%50000==0 ) std::cout << "sorting " << fEnergy << " MeV... " << "evt " << counter << "/" << fSimSortMax << "; " << double(counter)/double(fSimSortMax)*100 << "% complete \r"  << std::flush; 
      
         fEdepBranch->GetEntry(i);   
         fEkinBranch->GetEntry(i);   
@@ -242,7 +243,7 @@ void NeutronFit_BC501A::Sort(double * par)
     ApplyCutoffLow(fCutoffLow,"sim");    
     fSimHist->Scale(fExpHist->Integral(fExpHist->FindBin(fCutoffLow),fExpHist->FindBin(fCutoffHigh),"width")/fSimHist->Integral(fSimHist->FindBin(fCutoffLow),fSimHist->FindBin(fCutoffHigh),"width"));
     fSimHist->SetStats(false);
-    std::cout << "sorting " << fEnergy << " MeV... done!                                                   " << std::endl;
+    //std::cout << "sorting " << fEnergy << " MeV... done!                                                   " << std::endl;
 
     std::string title = std::to_string(fEnergy) + " MeV ; Chi2 = " + std::to_string(DoChi2());
     fExpHist->SetTitle(title.c_str());

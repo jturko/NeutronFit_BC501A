@@ -8,6 +8,8 @@ void Fitter::InitializeParameters()
     fParameters[2] = 0.373;
     fParameters[3] = 0.968;
     fParameters[4] = 0.;
+    
+    fMinimizeCounter = 0;
 
     fSum = 0;
     fSum2 = 0;
@@ -329,9 +331,16 @@ vec Fitter::NelderMead(double a1, double a2, double a3, double a4, double carbon
     return NelderMead(v,itermax);
 }
 
-int Fitter::Minimize()
+int Fitter::MinimizeGSL(std::string name)
 {
     SortAllRuns();
+
+    if(name=="kVectorBFGS")             ROOT::Math::GSLMinimizer mini( ROOT::Math::kVectorBFGS );
+    else if(name == "kConjugateFR")     ROOT::Math::GSLMinimizer mini( ROOT::Math::kConjugateFR );  
+    else if(name == "kConjugatePR")     ROOT::Math::GSLMinimizer mini( ROOT::Math::kConjugatePR );  
+    else if(name == "kVectorBFGS2")     ROOT::Math::GSLMinimizer mini( ROOT::Math::kVectorBFGS2 );  
+    else if(name == "kSteepestDescent") ROOT::Math::GSLMinimizer mini( ROOT::Math::kSteepestDescent );  
+    else {                              ROOT::Math::GSLMinimizer mini( ROOT::Math::kVectorBFGS ); std::cout << "using kVectorBFGS minimizer" << std::endl; }
 
     //ROOT::Math::GSLMinimizer mini( ROOT::Math::kVectorBFGS );
     ROOT::Math::GSLMinimizer mini( ROOT::Math::kConjugatePR );
@@ -358,7 +367,46 @@ int Fitter::Minimize()
         
 }
 
+int Fitter::MinimizeSimAn()
+{
+    SortAllRuns();
 
+    ROOT::Math::GSLSimAnMinimizer mini;
+
+    mini.SetMaxFunctionCalls(1000);
+    mini.SetMaxIterations(100);
+    mini.SetTolerance(0.0001);
+
+    ROOT::Math::Functor f(this,&Fitter::FitValue,5);
+    double step[5] = { 0.1,0.2,0.1,0.1 ,0.01 };
+    double variable[5] = { 0.639, 1.462, 0.373, 0.968, 0 };
+
+    mini.SetFunction(f);
+    
+    mini.SetVariable(0,"a1",variable[0],step[0]);
+    mini.SetVariableLimits(0,0.5,1);
+    
+    mini.SetVariable(1,"a2",variable[1],step[1]);
+    mini.SetVariableLimits(1,1,10);
+    
+    mini.SetVariable(2,"a3",variable[2],step[2]);
+    mini.SetVariableLimits(2,0.1,0.5);
+    
+    mini.SetVariable(3,"a4",variable[3],step[3]);
+    mini.SetVariableLimits(3,0.8,1.2);
+    
+    mini.SetVariable(4,"carbon",variable[4],step[4]);
+    mini.SetVariableLimits(4,0,0.2);
+
+    mini.SetPrintLevel(2);
+    mini.Minimize();
+
+    const double *xs = mini.X();
+    std::cout << "Best fit: Chi2(" << xs[0] << "," << xs[1] << "," << xs[2] << "," << xs[3] << "," << xs[4] << ")" << std::endl;
+    //std::cout << FitValue(xs);
+    return 0;
+
+}
 
 
 
