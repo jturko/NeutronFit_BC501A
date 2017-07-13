@@ -1,7 +1,6 @@
 
 #ifndef NEUTRONFIT_BC501A_H
 #define NEUTRONFIT_BC501A_H
-#endif
 
 #include "TCanvas.h"
 #include "TH1F.h"
@@ -12,6 +11,9 @@
 #include "TTree.h"
 #include "TBranch.h"
 #include "TRandom3.h"
+
+#include "TThread.h"
+#include <pthread.h>
 
 #include "TMath.h"
 
@@ -41,14 +43,14 @@ public:
         std::cout << "     a3 = " << fParameters[2] << std::endl;
         std::cout << "     a4 = " << fParameters[3] << std::endl;
         std::cout << " carbon = " << fParameters[4] << std::endl;
-        std::cout << "      A = " << fSmearingCoeff[0] << std::endl;
-        std::cout << "      B = " << fSmearingCoeff[1] << std::endl;
-        std::cout << "      C = " << fSmearingCoeff[2] << std::endl;
+        std::cout << "      A = " << fParameters[5] << std::endl;
+        std::cout << "      B = " << fParameters[6] << std::endl;
+        std::cout << "      C = " << fParameters[7] << std::endl;
         std::cout << " offset = " << fOffset << " keVee " << std::endl;
     }
 
     void Sort(double * par);
-    void Sort(double a1=0.639, double a2=1.462, double a3=0.373, double a4=0.968, double carbon=0);
+    void Sort(double a1=0.639, double a2=1.462, double a3=0.373, double a4=0.968, double carbon=0, double A=0.123, double B=0.125, double C=0.0074);
 
     void SetSmearingCoeff(double A=0.123, double B=0.125, double C=0.0074) {
         fSmearingCoeff[0] = A;
@@ -64,12 +66,39 @@ public:
         fOffset = offset;
     }
     double GetOffset() { return fOffset; }
+    
+    void SetSimSortMax(int val = -1) {
+        if(val < 0 || val > fSimTree->GetEntries()) fSimSortMax = fSimTree->GetEntries();
+        else fSimSortMax = val;
+        
+    }
+    int GetSimSortMax() { return fSimSortMax; }
 
     void SetParameters(double * par);
+    void Set5Parameters(double a1, double a2, double a3, double a4, double offset) {
+        fParameters[0] = fDeuteronCoeff[0] = a1;
+        fParameters[1] = fDeuteronCoeff[1] = a2;
+        fParameters[2] = fDeuteronCoeff[2] = a3;
+        fParameters[3] = fDeuteronCoeff[3] = a4;
+        fOffset = offset;
+    }
 
+    void SetUsePolyLightYield(bool val = true) { 
+        fUsePolyLightYield = val;
+    }
+    bool GetUsePolyLightYield() {
+        return fUsePolyLightYield;
+    }
+    double PolyLightOutput(double E, double * par) {
+        return (0.013271 + 0.00747539*E + 0.213137*TMath::Power(E,2) - 0.0914489*TMath::Power(E,3) + 
+                0.0228428*TMath::Power(E,4) - 0.00275064*TMath::Power(E,5) + 0.000125614*TMath::Power(E,6));
+    }
+    double PolyLightOutputWall(double E, double * par) {
+        return (0.00747539*E + 0.213137*TMath::Power(E,2) - 0.0914489*TMath::Power(E,3) + 
+                0.0228428*TMath::Power(E,4) - 0.00275064*TMath::Power(E,5) + 0.000125614*TMath::Power(E,6));
+    }
     double LightOutput(double E, double * par) {
         return ( par[0]*E-par[1]*(1.0-TMath::Exp(-par[2]*TMath::Power(E,par[3]))) );
-        //return ( fOffset/1000. + par[0]*E-par[1]*(1.0-TMath::Exp(-par[2]*TMath::Power(E,par[3]))) );
     }
     double Resolution(double E, double * par) {
         return (E*TMath::Sqrt(TMath::Power(par[0],2)+TMath::Power(par[1],2)/E+TMath::Power(par[2]/E,2)))/(2.*TMath::Sqrt(2.*TMath::Log(2.))) ;
@@ -87,25 +116,35 @@ public:
     }
     
     double DoChi2() {
+        TThread::Lock();
         TH1F * h_e = (TH1F*)fExpHist->Clone();
         TH1F * h_s = (TH1F*)fSimHist->Clone();
-        for(int i=h_e->FindBin(fCutoffHigh); i<h_e->GetNbinsX(); i++) h_e->SetBinContent(i,0.);
-        for(int i=h_s->FindBin(fCutoffHigh); i<h_s->GetNbinsX(); i++) h_s->SetBinContent(i,0.);
-        for(int i=0; i<h_e->FindBin(fCutoffLow); i++) h_e->SetBinContent(i,0.);
-        for(int i=0; i<h_s->FindBin(fCutoffLow); i++) h_s->SetBinContent(i,0.);
+        int val = 0;
+        for(int i=h_e->FindBin(fCutoffHigh); i<h_e->GetNbinsX(); i++) h_e->SetBinContent(i,val);
+        for(int i=h_s->FindBin(fCutoffHigh); i<h_s->GetNbinsX(); i++) h_s->SetBinContent(i,val);
+        for(int i=0; i<h_e->FindBin(fCutoffLow); i++) h_e->SetBinContent(i,val);
+        for(int i=0; i<h_s->FindBin(fCutoffLow); i++) h_s->SetBinContent(i,val);
         fChi2 = h_e->Chi2Test(h_s,"CHI2/NDF");
         delete h_e;
         delete h_s;
 
+        if(fChi2 < 0) fChi2 = 1e20;
+
+        TThread::UnLock();
         return fChi2;
     }
+    void NormalizeHistograms(double value = 1) {
+        if(fExpHist) fExpHist->Scale(value/fExpHist->Integral());
+        if(fSimHist) fSimHist->Scale(value/fSimHist->Integral());
+    }
+
 
     void Draw() {
         fExpHist->SetLineColor(kBlack);
         if(fSimHist) fSimHist->SetLineColor(kRed);
         else { std::cout << "no sim hist sorted yet!" << std::endl; return; }
         fExpHist->GetXaxis()->SetRangeUser(fCutoffLow-30,fCutoffHigh+150);
-        double ymax = 2*fExpHist->GetBinContent(fExpHist->GetMaximumBin());
+        double ymax = 1.25*fExpHist->GetBinContent(fExpHist->GetMaximumBin());
         fExpHist->GetYaxis()->SetRangeUser(0.1,ymax);
 
         fExpHist->Draw();
@@ -131,6 +170,8 @@ public:
     TF1 * Fit();
     bool DidParametersChange(double * par);
 
+    double GetExpCounts() { return fExpHist->GetEntries(); }
+    
     TF1 * GetFitFunc() { return fFitFunc; }
 
     TF1 * fFitFunc;
@@ -162,7 +203,8 @@ public:
     double fBeCoeff[4];
     double fBCoeff[4];
     double fSmearingCoeff[3];
-    double fParameters[5];
+    
+    double fParameters[8];
 
     int fSimSortMax;
     int fNumEntries;
@@ -172,9 +214,13 @@ public:
 
     double fChi2;
     int fExpBinNum;
-    
+    double fExpBinHigh;
+    double fExpBinLow;
+   
     bool fRebin;
-    
+
+    bool fUsePolyLightYield;    
 
 };
 
+#endif

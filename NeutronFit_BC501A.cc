@@ -2,6 +2,7 @@
 #include "NeutronFit_BC501A.hh"
 
 NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
+    fFitFunc(NULL),
     fRunNum(run_num),
     fSimFile(NULL),
     fExpFile(NULL),
@@ -14,7 +15,6 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
     fEdepVector(NULL),
     fEkinVector(NULL),
     fPtypeVector(NULL),
-    fFitFunc(NULL),
     fRebin(false)
 {
     
@@ -31,23 +31,11 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
     };
     fEnergy = energy_vector[fRunNum];
 
-    /*
     double cutoff_low_vector[] =
     {
         57      ,57     ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,
-        72.5    ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,
-        72.5    ,72.5   ,72.5   ,72.5   ,72.5   ,8.5    ,8.5    ,8.5    ,8.5    ,
-        8.5     ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,
-        8.5     ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,
-        8.5     ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,2.5    ,44     ,44     ,
-        44      ,44     ,44     ,44     ,44     ,44     ,44     ,44     ,44     ,
-        44
-    };*/
-    double cutoff_low_vector[] =
-    {
-        57      ,57     ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,
-        72.5    ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,
-        72.5    ,72.5   ,72.5   ,72.5   ,72.5   ,17     ,17     ,20     ,8.5    ,
+        72.5    ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,72.5   ,200    ,
+        200     ,200    ,100    ,100    ,100    ,17     ,17     ,20     ,8.5    ,
         8.5     ,15     ,15     ,15     ,15     ,15     ,15     ,15     ,8.5    ,
         8.5     ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,
         8.5     ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,8.5    ,500    ,500    ,  
@@ -55,19 +43,6 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
         150 
     };
     fCutoffLow = cutoff_low_vector[fRunNum];
-    
-    /*
-    double cutoff_high_vector[] =
-    {
-        128     ,167    ,236    ,298    ,1040   ,970    ,895    ,790    ,685    ,
-        575     ,485    ,397    ,687    ,820    ,980    ,1020   ,1280   ,1485   ,
-        1615    ,1660   ,555    ,460    ,375    ,355    ,415    ,475    ,160    ,
-        200     ,240    ,290    ,345    ,405    ,460    ,530    ,580    ,130    ,
-        107     ,90     ,75     ,62     ,142    ,132    ,120    ,94     ,67     ,
-        47      ,36     ,29     ,27     ,25     ,26     ,21.5   ,3900   ,3740   ,
-        3255    ,2955   ,2585   ,2300   ,1900   ,1600   ,1300   ,1040   ,855    ,
-        725 
-    };*/
     double cutoff_high_vector[] =
     {
         150     ,167    ,236 ,298 ,1040    ,970    ,1000    ,1000    ,800   ,
@@ -77,24 +52,33 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
         130     ,110    ,95  ,75  ,165     ,155    ,130     ,110     ,75    ,
         55      ,   45  ,35  ,30  ,25      ,25     ,25      ,4150    ,4000  ,
         3650    ,3200   ,2800,2500,2050    ,1750   ,1400    ,1100    ,900   ,
-        750        
+        750
     };
     fCutoffHigh = cutoff_high_vector[fRunNum];
  
-    fExpFile = TFile::Open("../../../hists2012.root"); 
+    //fExpFile = TFile::Open("~/data/hists2012_resort.root"); 
+    fExpFile = TFile::Open("~/data/BC501A_bkgsub.root"); 
 
     std::string hist_name = "ProtonCal" + std::to_string(fRunNum);
     std::string title = std::to_string(fEnergy) + " MeV";
     fExpHist = (TH1F*)(fExpFile->Get(hist_name.c_str())->Clone());
     fExpHist->SetNameTitle(hist_name.c_str(),title.c_str());
+    //fExpHist->Scale(10000./fExpHist->Integral());
     fExpHist->SetLineColor(kBlack);
     fExpHist->GetXaxis()->UnZoom(); 
     fExpHist->GetYaxis()->UnZoom();
+    fExpHist->GetXaxis()->SetTitleOffset(0.75);
+    fExpHist->GetXaxis()->SetTitleSize(0.05);
     fExpHist->SetStats(false);
     ApplyCutoffLow(fCutoffLow,"exp");
     fExpBinNum = fExpHist->GetNbinsX();
-    
-    std::string name = "../G4_RAW/Sim" + std::to_string(fRunNum) + "/g4out.root";
+    fExpBinHigh = fExpHist->GetBinLowEdge(fExpBinNum+1);
+    fExpBinLow = fExpHist->GetBinLowEdge(1);
+    for(int i=0; i<fExpBinNum; i++) {
+        if(fExpHist->GetBinContent(i)<0.) fExpHist->SetBinContent(i,0.);
+    }    
+
+    std::string name = "~/data/smearing/proton/G4_RAW/Sim" + std::to_string(fRunNum) + "/g4out.root";
     fSimFile = TFile::Open(name.c_str());     
 
     fSimTree = (TTree*)(fSimFile->Get("ntuple/ntuple")); 
@@ -118,22 +102,31 @@ NeutronFit_BC501A::NeutronFit_BC501A(int run_num) :
     fParameters[2] = 0.373;
     fParameters[3] = 0.968;
     fParameters[4] = 0.0;
+    fParameters[5] = 0.1306;
+    fParameters[6] = 0.1359;
+    fParameters[7] = 1.21e-6;
     SetParameters(fParameters);
-   
-    fOffset = 8.5;
+    
+    fOffset = 0;
 
     //fSimSortMax = 200000;
     
-    if(fSimTree->GetEntries() > fExpHist->GetEntries()) fSimSortMax = fExpHist->GetEntries();
+    //if(fSimTree->GetEntries() > fExpHist->GetEntries()) fSimSortMax = fExpHist->GetEntries();
+    
+    if(fSimTree->GetEntries() >= 2e5) fSimSortMax = 2e5;
     else fSimSortMax = fSimTree->GetEntries();
+    
+    fSimSortMax = 1e5;
+
     //fSimSortMax = fSimTree->GetEntries();
-    //fSimSortMax = 1e4;
 
-    std::cout << "Run# = " << fRunNum << " ; Energy = " << fEnergy << " MeV ; cutoff(low,high) = (" << fCutoffLow << ","; 
-    std::cout << fCutoffHigh << ") " << " ; #evts ratio = " << double(fSimSortMax)/double(fExpHist->GetEntries()) << std::endl;
+    std::cout << "Run# = " << fRunNum << "\tEnergy = " << fEnergy << " MeV\tcutoff(low,high) = (" << fCutoffLow << ","; 
+    std::cout << fCutoffHigh << ") " << "\t#evts ratio = " << double(fSimSortMax)/double(fExpHist->GetEntries()) << std::endl;
 
-    fExpHist->Rebin(5);
+    //fExpHist->Rebin(5);
     //if(fExpBinNum == 50100) fExpHist->Rebin(10);
+
+    fUsePolyLightYield = false;
 
 }
 
@@ -146,23 +139,32 @@ void NeutronFit_BC501A::SetParameters(double * par)
     fProtonCoeff[2] = par[2];
     fProtonCoeff[3] = par[3];
     fCarbonCoeff[0] = par[4];
- 
+    fSmearingCoeff[0] = par[5]; 
+    fSmearingCoeff[1] = par[6]; 
+    fSmearingCoeff[2] = par[7]; 
+
     fParameters[0] = par[0];
     fParameters[1] = par[1];
     fParameters[2] = par[2];
     fParameters[3] = par[3];
     fParameters[4] = par[4];
+    fParameters[5] = par[5];
+    fParameters[6] = par[6];
+    fParameters[7] = par[7];
 }
 
-void NeutronFit_BC501A::Sort(double a1, double a2, double a3, double a4, double carbon)
+void NeutronFit_BC501A::Sort(double a1, double a2, double a3, double a4, double carbon, double A, double B, double C)
 {
-    double par[5];
+    double par[8];
     par[0] = a1;
     par[1] = a2;
     par[2] = a3;
     par[3] = a4;
     par[4] = carbon;
-    
+    par[5] = A;    
+    par[6] = B;    
+    par[7] = C;    
+
     Sort(par);
 }
 
@@ -175,15 +177,25 @@ void NeutronFit_BC501A::Sort(double * par)
     //PrintParameters();
     
     fExpBinNum = fExpHist->GetNbinsX();
+    
+    TThread::Lock();
     if(fSimHist) { delete fSimHist; fSimHist = NULL; }
-    fSimHist = new TH1F("fSimHist","fSimHist",fExpBinNum,-10,5000); 
+    //fSimHist = new TH1F("fSimHist","fSimHist",fExpBinNum,-10,5000); 
+    fSimHist = new TH1F("fSimHist","fSimHist",fExpBinNum,fExpBinLow,fExpBinHigh); 
+    TThread::UnLock();
+
     int nHits = 0;
     double light = 0.;
     double centroidEkin = 0.;    
     double centroidEres = 0.;    
     
+    //clock_t overalstart = clock();
+    //double resolutiontime = 0.;
+    //double runningtime = 0.;
+    
     int counter = 0;
-
+    
+    //std::cout << "starting run " << fRunNum << std::endl;
     for(int i=0; i<fSimSortMax; i++)
     {
         counter++;
@@ -205,8 +217,14 @@ void NeutronFit_BC501A::Sort(double * par)
                 centroidEres = LightOutput(fEkinVector->at(j)-fEdepVector->at(j), fProtonCoeff);
             }
             else if(fPtypeVector->at(j) == 6) {
-                centroidEkin = LightOutput(fEkinVector->at(j), fDeuteronCoeff);
-                centroidEres = LightOutput(fEkinVector->at(j)-fEdepVector->at(j), fDeuteronCoeff);
+                if(fUsePolyLightYield == true) {
+                    centroidEkin = PolyLightOutput(fEkinVector->at(j), fDeuteronCoeff);
+                    centroidEres = PolyLightOutputWall(fEkinVector->at(j)-fEdepVector->at(j), fDeuteronCoeff);
+                }
+                else {    
+                    centroidEkin = LightOutput(fEkinVector->at(j), fDeuteronCoeff);
+                    centroidEres = LightOutput(fEkinVector->at(j)-fEdepVector->at(j), fDeuteronCoeff);
+                }
             }
             else if(fPtypeVector->at(j) == 7) {
                 centroidEkin = LightOutput(fEkinVector->at(j), fCarbonCoeff);
@@ -227,36 +245,54 @@ void NeutronFit_BC501A::Sort(double * par)
             else { 
                 centroidEkin = 0.; 
                 centroidEres = 0.; 
-            } 
-
-            if(centroidEkin>0.){
-                light += 1000.*fRandom.Gaus(centroidEkin, Resolution(centroidEkin,fSmearingCoeff));
             }
-            if(centroidEres>0.){
-                light -= 1000.*fRandom.Gaus(centroidEres, Resolution(centroidEres,fSmearingCoeff));
-            } 
-        }//end scatters loop       
-        if(light>0.) fSimHist->Fill(light+fOffset);
+            light = light + centroidEkin - centroidEres; 
+            //clock_t resolutionstart = clock();
+            //if(centroidEkin>0.){
+            //    light += 1000.*fRandom.Gaus(centroidEkin, Resolution(centroidEkin,fSmearingCoeff));
+            //}
+            //if(centroidEres>0.){
+            //    light -= 1000.*fRandom.Gaus(centroidEres, Resolution(centroidEres,fSmearingCoeff));
+            //} 
+            //clock_t resolutionend = clock();
+            //resolutiontime += (double)(resolutionend - resolutionstart);
+        }//end scatters loop
+        if( (light+(fOffset/1000.)) > 0. && light > 0.) {
+            light = 1000.*fRandom.Gaus(light+(fOffset/1000.),Resolution(light+(fOffset/1000.),fSmearingCoeff));
+            TThread::Lock();
+            fSimHist->Fill(light);
+            TThread::UnLock();
+        }
         //if(light>0.) fSimHist->Fill(light);
     }//end event loop
+    //std::cout << "finishing run " << fRunNum << std::endl;
+    
+    //clock_t overalend = clock();
+    //std::cout << "Overall time: " << (int)(overalend - overalstart) << std::endl;
+    //std::cout << "Resolution time: " << (int)resolutiontime << std::endl;
+
+    fExpHist->SetBinContent(fExpBinNum+1,0);
 
     ApplyCutoffLow(fCutoffLow,"sim");    
     fSimHist->Scale(fExpHist->Integral(fExpHist->FindBin(fCutoffLow),fExpHist->FindBin(fCutoffHigh),"width")/fSimHist->Integral(fSimHist->FindBin(fCutoffLow),fSimHist->FindBin(fCutoffHigh),"width"));
     fSimHist->SetStats(false);
     //std::cout << "sorting " << fEnergy << " MeV... done!                                                   " << std::endl;
 
-    std::string title = std::to_string(fEnergy) + " MeV ; Chi2 = " + std::to_string(DoChi2());
+    std::string title = std::to_string(fEnergy) + " MeV - Run " + std::to_string(fRunNum) + "; #chi^{2} = " + std::to_string(DoChi2());
     fExpHist->SetTitle(title.c_str());
-    
-    if(fFitFunc) { delete fFitFunc; fFitFunc = NULL; }
-    fFitFunc = new TF1("fFitFunc",this,&NeutronFit_BC501A::HistCompare,fCutoffLow,fCutoffHigh,5);
-    fFitFunc->SetNpx(100);
-    fFitFunc->SetParameters(fParameters[0],fParameters[1],fParameters[2],fParameters[3],fParameters[4]);
-    fFitFunc->SetParLimits(0,0.2,1);
-    fFitFunc->SetParLimits(1,0.5,10);
-    fFitFunc->SetParLimits(2,0.05,0.4);
-    fFitFunc->SetParLimits(3,0.8,1.2);
-    fFitFunc->SetParLimits(4,0,0.1);
+   
+    //if(fFitFunc) { delete fFitFunc; fFitFunc = NULL; }
+    //fFitFunc = new TF1("fFitFunc",this,&NeutronFit_BC501A::HistCompare,fCutoffLow,fCutoffHigh,8);
+    //fFitFunc->SetNpx(100);
+    //fFitFunc->SetParameters(fParameters[0],fParameters[1],fParameters[2],fParameters[3],fParameters[4],fParameters[5],fParameters[6],fParameters[7]);
+    //fFitFunc->SetParLimits(0,0.2,1);
+    //fFitFunc->SetParLimits(1,0.5,10);
+    //fFitFunc->SetParLimits(2,0.05,0.4);
+    //fFitFunc->SetParLimits(3,0.8,1.2);
+    //fFitFunc->SetParLimits(4,0,0.1);
+    //fFitFunc->SetParLimits(5,0,0.3);
+    //fFitFunc->SetParLimits(6,0,0.3);
+    //fFitFunc->SetParLimits(7,0,0.05);
 
 }
 
@@ -283,7 +319,7 @@ TF1 * NeutronFit_BC501A::Fit()
 
 bool NeutronFit_BC501A::DidParametersChange(double * par)
 {
-    for(int i=0; i<5; i++) 
+    for(int i=0; i<8; i++) 
     {
         if(TMath::Abs(par[i] - fParameters[i]) > 1e-4) return true;
     }

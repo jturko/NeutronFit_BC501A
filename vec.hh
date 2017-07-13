@@ -1,7 +1,6 @@
 
 #ifndef VEC_H
 #define VEC_H
-#endif
 
 #include <iostream>
 #include <fstream>
@@ -14,12 +13,12 @@ class vec
 {
 public:
     vec() {
-        set(0,0,0,0,0);
+        set(0,0,0,0,0,0,0,0,0);
     }
     ~vec() {}
 
-    vec(double e1, double e2, double e3, double e4, double e5) {
-        set(e1,e2,e3,e4,e5);
+    vec(double e1, double e2, double e3, double e4, double e5, double e6, double e7, double e8, double e9) {
+        set(e1,e2,e3,e4,e5,e6,e7,e8,e9);
     }
 
     double at(int i) {
@@ -32,13 +31,17 @@ public:
 
     int size() { return fVector.size(); }
 
-    void set(double e1, double e2, double e3, double e4, double e5) {
+    void set(double e1, double e2, double e3, double e4, double e5, double e6, double e7, double e8, double e9) {
         fVector.resize(0);
         fVector.push_back(e1); fArray[0] = e1;
         fVector.push_back(e2); fArray[1] = e2;
         fVector.push_back(e3); fArray[2] = e3;
         fVector.push_back(e4); fArray[3] = e4;
         fVector.push_back(e5); fArray[4] = e5;
+        fVector.push_back(e6); fArray[5] = e6;
+        fVector.push_back(e7); fArray[6] = e7;
+        fVector.push_back(e8); fArray[7] = e8;
+        fVector.push_back(e9); fArray[8] = e8;
     }
     void set(int i, double val) {
         if(i<0||i>=int(fVector.size())) {
@@ -78,6 +81,7 @@ public:
 
 private:
     std::vector<double> fVector;
-    double fArray[5];
+    double fArray[9];
 };
 
+#endif
