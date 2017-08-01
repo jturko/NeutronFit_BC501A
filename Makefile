@@ -31,5 +31,4 @@ ProtonFitter.o: ProtonFitter.cc $(HEADERS)
 clean:
 	rm -f *.o *.pcm ProtonFitterDict.cxx libProtonFitter.so fit_proton fit_protonNM draw 
 
-all:
-	make fit_proton && make fit_protonNM && make draw
+all: fit_proton draw
