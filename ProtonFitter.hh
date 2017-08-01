@@ -307,6 +307,7 @@ public:
     int MyMinimizeSimAn9(double alpha = 0.98, double T_0 = 20, double T_min = 0.1);   
  
 
+    void WriteToFile(std::string name);
     void DrawToFile(std::string name);
 
     bool GetUsePolyLightYield() { 

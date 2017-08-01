@@ -259,6 +259,22 @@ void ProtonFitter::Run(double a1, double a2, double a3, double a4, double carbon
     std::cout << "sum(chi2)/nfits = " << fSum << " | sum((chi2)^2)/nfits = " << fSum2 << std::endl;
 }
 
+void ProtonFitter::WriteToFile(std::string name)
+{
+    std::string rootfile = ".root";
+    if(name.length() <= 5 || name.compare(name.length()-5,5,rootfile) != 0) name += ".root";
+    TFile * f = TFile::Open(name.c_str(),"RECREATE");
+
+    std::cout << "writing all simulated histograms to " << name << " ...";
+    f->cd();
+    for(int i=0; i<GetNumberOfNeutronFit_BC501As(); i++) {
+        fNeutronFit_BC501AVector.at(i).fSimHist->Write(Form("Sim%d",fRunNumVector.at(i)));
+    }
+    f->Close();
+    std::cout << " done! " << std::endl;
+}
+
+
 void ProtonFitter::DrawToFile(std::string input)
 {
     std::cout << "drawing all NeutronFit_BC501As to output file \"" << input << "\" ... " << std::flush;
