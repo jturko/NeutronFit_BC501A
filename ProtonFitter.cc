@@ -325,8 +325,10 @@ void ProtonFitter::SortAllRunsMT()
     //TThread::Ps();
     //TThread::Sleep(10,0);
     //TThread::Ps();
-    
+ 
+    TThread::Lock();   
     DoChi2();
+    TThread::UnLock();
 }
 
 void ProtonFitter::SetNextNeutronFit_BC501A(int i) {
